@@ -8,7 +8,10 @@ import Common.EffectOnWindow
 import CompilationInterface.GenerateJsonCoders
 import Dict
 import EveOnline.MemoryReading
-import EveOnline.ParseUserInterface exposing (UITreeNodeWithDisplayRegion)
+import EveOnline.ParseUserInterface exposing (
+    UITreeNodeWithDisplayRegion,
+    ChatWindowStack,
+    ChatUserEntry)
 import EveOnline.VolatileProcessInterface
 import File
 import File.Download
@@ -916,6 +919,43 @@ viewSourceFromLiveProcess state =
     ]
         |> Html.div []
 
+maybeStringToTd: Maybe String -> String -> Html.Html Event
+maybeStringToTd maybeString className =
+    case maybeString of
+        Nothing -> "" |> Html.text
+        Just string -> Html.td [HA.class className] [string |> Html.text]
+
+displayUser: ChatUserEntry -> Html.Html Event
+displayUser user =
+    Html.tr [] [
+        maybeStringToTd user.standingIconHint "standing",
+        maybeStringToTd user.name "name"
+    ]
+
+
+displayUsers: List ChatUserEntry -> Html.Html Event
+displayUsers users =
+    Html.table [] (List.map displayUser users)
+
+displayChatStack: ChatWindowStack -> Html.Html Event
+displayChatStack chatWindowStack =
+    let
+        empty = "" |> Html.text
+    in
+        case chatWindowStack.chatWindow of
+            Nothing -> empty
+            Just chatWindow ->
+                if chatWindow.name == (Just "chatchannel_local") then
+                    case chatWindow.userlist of
+                        Nothing -> empty
+                        Just userlist ->
+                            displayUsers userlist.visibleUsers
+                else
+                    Html.p [] [Html.text ("filtered " ++ (Maybe.withDefault "" chatWindow.name))]
+
+displayChatStacks: List ChatWindowStack -> Html.Html Event
+displayChatStacks chatWindowStacks =
+    Html.div [] (List.map displayChatStack chatWindowStacks)
 
 presentParsedMemoryReading : Maybe InputRouteConfig -> ParseMemoryReadingSuccess -> State -> Html.Html Event
 presentParsedMemoryReading maybeInputRoute memoryReading state =
@@ -933,6 +973,8 @@ presentParsedMemoryReading maybeInputRoute memoryReading state =
                         , verticalSpacerFromHeightInEm 0.5
                         , [ ((memoryReading.parsedUserInterface.contextMenus |> List.length |> String.fromInt) ++ " Context menus") |> Html.text ] |> Html.h3 []
                         , displayParsedContextMenus maybeInputRoute memoryReading.parsedUserInterface.contextMenus
+                        , [ "Local" |> Html.text ] |> Html.h3 []
+                        , displayChatStacks memoryReading.parsedUserInterface.chatWindowStacks
                         ]
 
                 ViewUITree ->
