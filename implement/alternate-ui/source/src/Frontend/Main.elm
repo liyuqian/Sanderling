@@ -975,6 +975,8 @@ presentParsedMemoryReading maybeInputRoute memoryReading state =
                         , displayParsedContextMenus maybeInputRoute memoryReading.parsedUserInterface.contextMenus
                         , [ "Local" |> Html.text ] |> Html.h3 []
                         , displayChatStacks memoryReading.parsedUserInterface.chatWindowStacks
+                        , [ "Interface" |> Html.text ] |> Html.h3 []
+                        , viewTreeParsedUserInterface maybeInputRoute memoryReading.uiNodesWithDisplayRegion state.parsedUITreeView memoryReading.parsedUserInterface
                         ]
 
                 ViewUITree ->
